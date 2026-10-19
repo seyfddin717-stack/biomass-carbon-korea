@@ -1,0 +1,10 @@
+parameter,value,net_kg_per_MWh_10yr_horizon,parity_yr_vs_coal
+baseline,-,1033.6,13.0
+regrowth years,10,219.1,4.3
+regrowth years,60,1237.3,26.1
+pellet efficiency,0.28,1218.2,16.4
+pellet efficiency,0.38,897.6,9.6
+sea kg CO2/t-km,0.0027,1020.0,12.7
+sea kg CO2/t-km,0.013,1046.5,13.3
+LHV GJ/t,16.0,1047.3,13.4
+LHV GJ/t,18.0,1021.5,12.7
