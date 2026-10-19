@@ -30,6 +30,7 @@ How many kg of CO2 does 1 MWh of electricity from imported wood pellets emit ove
 Context: Korea imported about 3.9 million tonnes of wood pellets in 2025, mainly from Vietnam (37 %), Indonesia (23 %), Russia (16 %) and Canada (12 %) (Lesprom news report).
 
 ## Results (baseline, pellets from Vietnam)
+![Net emissions, parity horizon and baseline](results/biomass_carbon.png)
 | Case | kg CO2 per MWh |
 |---|---|
 | Coal | 910 |
