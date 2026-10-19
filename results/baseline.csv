@@ -1,0 +1,6 @@
+case,kg_CO2_per_MWh_el
+Coal (combustion only),910.0
+Natural gas (combustion only),367.0
+"Pellets: supply chain only (IPCC convention, biogenic = 0)",219.0
+Pellets: biogenic CO2 at stack,1222.0
+Pellets: supply chain + all biogenic (no re-absorption),1441.0
