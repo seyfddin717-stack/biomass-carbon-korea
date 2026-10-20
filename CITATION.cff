@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this model or its results, please cite it as below."
+title: "Net CO2 of Imported Wood Pellet Electricity in South Korea: A Time-Horizon Model"
+type: software
+authors:
+  - family-names: "Afandiyev"
+    given-names: "Seyfaddin"
+https://orcid.org/0009-0007-0980-2375
+license: MIT
+repository-code: "https://github.com/seyfddin717-stack/biomass-carbon-korea"
+keywords:
+  - biomass
+  - wood pellets
+  - carbon accounting
+  - biogenic CO2
+  - South Korea
+date-released: "2026-10-20"
+https://doi.org/10.5281/zenodo.23492637
