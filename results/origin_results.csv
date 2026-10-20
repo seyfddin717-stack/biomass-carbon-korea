@@ -1,0 +1,5 @@
+origin,sea_km,T_years,T_low,T_high,share_of_four,supply_kg_per_MWh,parity_vs_coal_yr,parity_at_T_low,parity_at_T_high
+Vietnam,4000,6,5,12,0.42,219.0,2.6,2.2,5.2
+Indonesia,4500,6,5,8,0.261,222.0,2.6,2.2,3.5
+Russia,1000,100,60,150,0.182,204.0,42.2,25.3,63.2
+Canada,9500,70,55,100,0.136,247.0,32.0,25.2,45.7
