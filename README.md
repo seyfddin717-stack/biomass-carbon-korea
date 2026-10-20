@@ -54,7 +54,9 @@ For the import-weighted mix, pellet electricity emits less than coal after about
 | Pellets, biogenic CO2 at stack | 1222 |
 | Pellets, supply chain + all biogenic | 1441 |
 
-Pellet electricity emits less than coal after about 2, 13, 26 and 43 years for regrowth times of 5, 30, 60 and 100 years. With one common regrowth time, the distance (1000-9500 km of sea transport) changes the parity time by only about 1-4 years; regrowth time and plant efficiency matter most. When regrowth time differs by origin, the origin matters a lot (see above).
+Pellet electricity emits less than coal after about 2, 13, 26 and 43 years for regrowth times of 5, 30, 60 and 100 years. With one common regrowth time, the distance (1000-9500 km of sea transport) changes the parity time by only about 1-4 years; regrowth time and plant efficiency matter most. When regrowth time differs by origin, the origin matters a lot (see above). 
+
+![Net emissions by origin, parity horizon and baseline](results/figure_net_emissions.png)
 
 ## Limitations
 - Regrowth time is the least certain input. Russia's value is an assumption and Canada's comes from two species in one region. The T for plantations is a rotation age, which is not always the same as a carbon payback time, and pellets made from mill residues would follow a different baseline.
