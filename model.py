@@ -26,6 +26,18 @@ INLAND = 62.3 + 9.1             # truck 100 km + rail
 SEA_KG_PER_TKM = 0.008          # assumption; GLEC 2023 bulk carrier >200k dwt = 0.0027, smaller ships higher
 SEA_KM = {"Russia": 1000, "Vietnam": 4000, "Indonesia": 4500, "Canada": 9500}  # approximate distances
 SEA_KM_DEFAULT = SEA_KM["Vietnam"]
+# Origin-specific regrowth time T (years) and 2025 import shares (Lesprom). Malaysia (6 %) has no T and is left out;
+# shares are renormalised over the four origins below.
+#   Vietnam   6 (5-12): acacia plantations, 5-12 yr rotations, Vo Thi Hai & La Thi (2024), Tropentag
+#   Indonesia 6 (5-8) : Eucalyptus pellita 6-yr cycle, Iswanto et al. (2021) JMHT 27(3); range is an assumption
+#   Canada    70 (55-100): MAI culmination age of lodgepole pine / white spruce in north-central BC, Lalumiere et al. (2019)
+#   Russia    100 (60-150): ASSUMPTION; Shvidenko reports mean coniferous stand age ~115 yr, not a rotation age
+ORIGINS = {
+    "Vietnam":   {"km": 4000, "T": 6,   "T_lo": 5,  "T_hi": 12,  "share": 0.37},
+    "Indonesia": {"km": 4500, "T": 6,   "T_lo": 5,  "T_hi": 8,   "share": 0.23},
+    "Russia":    {"km": 1000, "T": 100, "T_lo": 60, "T_hi": 150, "share": 0.16},
+    "Canada":    {"km": 9500, "T": 70,  "T_lo": 55, "T_hi": 100, "share": 0.12},
+}
 REGROWTH_YEARS_DEFAULT = 30     # years for forest to re-absorb the biogenic CO2 (assumption)
 J = 3.6                          # GJ per MWh
 
@@ -55,6 +67,20 @@ def parity_horizon(comparator, regrowth_years=REGROWTH_YEARS_DEFAULT, **kw):
         return None
     return regrowth_years * (1 - (comparator - supply) / bio)
 
+def origin_parity(name, T=None):
+    o = ORIGINS[name]; coal = per_mwh(ETA["coal"], EF_COAL)
+    return parity_horizon(coal, T or o["T"], sea_km=o["km"])
+
+def mix_net(horizon):
+    """Import-share-weighted net emission (kg CO2/MWh) for the four origins at their own T."""
+    tot = sum(o["share"] for o in ORIGINS.values())
+    return sum(o["share"] / tot * net_pellet(horizon, o["T"], sea_km=o["km"]) for o in ORIGINS.values())
+
+def mix_parity(comparator, hmax=200):
+    hs = np.arange(0, hmax + 0.01, 0.1)
+    ok = np.where(mix_net(hs) <= comparator)[0]
+    return float(hs[ok[0]]) if len(ok) else None
+
 if __name__ == "__main__":
     coal = per_mwh(ETA["coal"], EF_COAL)
     gas = per_mwh(ETA["gas"], EF_GAS)
@@ -65,32 +91,45 @@ if __name__ == "__main__":
             ("Pellets: supply chain + all biogenic (no re-absorption)", supply + bio)]
     pd.DataFrame(rows, columns=["case", "kg_CO2_per_MWh_el"]).round(0).to_csv(f"{OUT}/baseline.csv", index=False)
 
-    # 1) net emission vs time horizon for several regrowth times
+    # 1) origin-specific results
+    tot = sum(o["share"] for o in ORIGINS.values())
+    orows = []
+    for n, o in ORIGINS.items():
+        sup_o, _ = pellet_split(sea_km=o["km"])
+        orows.append((n, o["km"], o["T"], o["T_lo"], o["T_hi"], round(o["share"] / tot, 3), round(sup_o, 0),
+                      round(origin_parity(n), 1), round(origin_parity(n, o["T_lo"]), 1), round(origin_parity(n, o["T_hi"]), 1)))
+    odf = pd.DataFrame(orows, columns=["origin", "sea_km", "T_years", "T_low", "T_high", "share_of_four", "supply_kg_per_MWh",
+                                       "parity_vs_coal_yr", "parity_at_T_low", "parity_at_T_high"])
+    odf.to_csv(f"{OUT}/origin_results.csv", index=False)
+    mp_coal, mp_gas = mix_parity(coal), mix_parity(gas)
+    pd.DataFrame([("import-weighted mix", mp_coal, mp_gas, float(mix_net(0)), float(mix_net(10)), float(mix_net(30)))],
+                 columns=["case", "parity_vs_coal_yr", "parity_vs_gas_yr", "net_at_0yr", "net_at_10yr", "net_at_30yr"]).round(1).to_csv(f"{OUT}/mix_results.csv", index=False)
+
+    # 2) figure
     H = np.arange(0, 101)
     fig, ax = plt.subplots(1, 3, figsize=(15, 4.6))
-    for T, c in [(5, "#2a9d8f"), (30, "#e9c46a"), (60, "#e76f51"), (100, "#6d597a")]:
-        ax[0].plot(H, net_pellet(H, T), label=f"regrowth {T} yr", color=c)
-    ax[0].axhline(coal, color="k", ls="--", label="coal"); ax[0].axhline(gas, color="grey", ls=":", label="natural gas")
-    ax[0].set(xlabel="Time horizon (years)", ylabel="kg CO2 per MWh electricity", title="Net pellet emissions vs horizon")
-    ax[0].legend(fontsize=8)
-
-    # 2) parity horizon vs regrowth time, by origin
-    Ts = np.arange(5, 101, 5); rows2 = []
-    for name, km in SEA_KM.items():
-        ys = [parity_horizon(coal, T, sea_km=km) for T in Ts]
-        ax[1].plot(Ts, ys, label=f"{name} ({km} km)")
-        rows2 += [(name, km, T, y) for T, y in zip(Ts, ys)]
-    ax[1].set(xlabel="Forest regrowth time (years)", ylabel="Years until pellets <= coal", title="Parity horizon vs coal")
-    ax[1].legend(fontsize=8)
-    pd.DataFrame(rows2, columns=["origin", "sea_km", "regrowth_years", "parity_years_vs_coal"]).round(1).to_csv(f"{OUT}/parity_horizon.csv", index=False)
-
-    # 3) stacked baseline bars
+    cols = {"Vietnam": "#2a9d8f", "Indonesia": "#8ab17d", "Russia": "#e76f51", "Canada": "#6d597a"}
+    for n, o in ORIGINS.items():
+        ax[0].plot(H, net_pellet(H, o["T"], sea_km=o["km"]), color=cols[n], label=f"{n} (T={o['T']} yr)")
+    ax[0].plot(H, mix_net(H), color="k", lw=2.5, label="import-weighted mix")
+    ax[0].axhline(coal, color="k", ls="--", lw=1, label="coal"); ax[0].axhline(gas, color="grey", ls=":", label="natural gas")
+    ax[0].set(xlabel="Time horizon (years)", ylabel="kg CO2 per MWh electricity", title="Net pellet emissions by origin")
+    ax[0].legend(fontsize=7)
+    names = list(ORIGINS); y0 = np.arange(len(names))
+    base = [origin_parity(n) for n in names]
+    lo = [origin_parity(n, ORIGINS[n]["T_lo"]) for n in names]; hi = [origin_parity(n, ORIGINS[n]["T_hi"]) for n in names]
+    ax[1].barh(y0, base, color=[cols[n] for n in names])
+    ax[1].errorbar(base, y0, xerr=[np.array(base) - np.array(lo), np.array(hi) - np.array(base)], fmt="none", ecolor="k", capsize=3)
+    ax[1].axvline(mp_coal, color="k", ls="--", lw=1); ax[1].text(mp_coal, len(names) - 0.4, f" mix {mp_coal:.0f} yr", fontsize=8)
+    ax[1].set_yticks(y0); ax[1].set_yticklabels(names); ax[1].invert_yaxis()
+    ax[1].set(xlabel="Years until pellets <= coal (bar: baseline T; whisker: T range)", title="Parity horizon vs coal")
     labels = ["Coal", "Gas", "Pellets\nsupply only", "Pellets\n+ biogenic"]
     ax[2].bar(labels[0], coal, color="#555"); ax[2].bar(labels[1], gas, color="#999")
     ax[2].bar(labels[2], supply, color="#2a9d8f")
     ax[2].bar(labels[3], supply, color="#2a9d8f", label="supply chain"); ax[2].bar(labels[3], bio, bottom=supply, color="#e76f51", label="biogenic CO2")
     ax[2].set(ylabel="kg CO2 per MWh electricity", title="Baseline (pellets from Vietnam)"); ax[2].legend(fontsize=8)
     plt.tight_layout(); plt.savefig(f"{OUT}/biomass_carbon.png", dpi=150)
+    print(odf.to_string()); print(pd.read_csv(f"{OUT}/mix_results.csv").to_string())
 
     # 4) sensitivity: 30-yr regrowth assumed, net emission after a 10-year horizon
     sens = []
@@ -104,5 +143,6 @@ if __name__ == "__main__":
     for f in (0.0027, 0.013): add("sea kg CO2/t-km", f, sea_f=f)
     for l in (16.0, 18.0): add("LHV GJ/t", l, lhv=l)
     pd.DataFrame(sens, columns=["parameter", "value", "net_kg_per_MWh_10yr_horizon", "parity_yr_vs_coal"]).round(1).to_csv(f"{OUT}/sensitivity.csv", index=False)
+
     print(pd.read_csv(f"{OUT}/baseline.csv")); print(pd.read_csv(f"{OUT}/sensitivity.csv"))
     print("parity vs coal (Vietnam), T=5,30,60,100:", [round(parity_horizon(coal, T), 1) for T in (5, 30, 60, 100)])
