@@ -1,5 +1,5 @@
 # Biomass carbon model: imported wood pellets for electricity in South Korea
-
+DOI: https://doi.org/10.5281/zenodo.23492637
 A transparent per-MWh carbon model that compares electricity from imported wood pellets with coal and natural gas. It makes explicit the assumption that decides the result: how fast the forest re-absorbs the CO2 released at the stack.
 
 ## Question
